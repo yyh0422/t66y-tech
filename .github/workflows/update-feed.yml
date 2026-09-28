@@ -1,0 +1,30 @@
+name: 更新 RSS
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 每 30 分钟跑一次
+  workflow_dispatch:          # 允许手动点一下立即跑
+
+permissions:
+  contents: write
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 抓取技术讨论区并生成 RSS
+        run: python3 fetch.py .
+
+      - name: 有变化就提交
+        run: |
+          git config user.name "rss-bot"
+          git config user.email "rss-bot@users.noreply.github.com"
+          git add feed.xml content_cache.json
+          git diff --cached --quiet || git commit -m "更新 feed $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
